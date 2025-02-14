@@ -2,7 +2,6 @@
 import numpy as np
 import hashlib
 import string
-from collections import Counter
 
 def stable_hash(text, d):
     """Creates a stable hash function using MD5."""
@@ -10,101 +9,76 @@ def stable_hash(text, d):
 
 def name2features(name):
     """
-    Enhanced name feature extraction with additional techniques:
-    - Improved n-gram coverage (1-4 grams)
-    - Position-aware character encoding
-    - Consonant patterns
-    - Syllable estimation
-    - Advanced statistical features
-    - Phonetic features
+    Optimized name feature extraction focusing on most predictive features:
+    - Enhanced prefix/suffix processing
+    - Carefully weighted n-grams
+    - Optimized character frequency encoding
+    - Key statistical features
     """
-    d = 2048  # Increased feature space for more granular encoding
+    d = 1024  # Keep original dimension - it was working well
     v = np.zeros(d)
     name = name.lower().strip()
     
-    if not name:  # Handle empty names
+    if not name:
         return v
         
     vowels = set("aeiou")
-    consonants = set(string.ascii_lowercase) - vowels
+    alphabet = string.ascii_lowercase
     
-    # === Character Statistics ===
-    # Position-aware character encoding
+    # === Prefix and Suffix Features (Enhanced) ===
+    # Weight prefixes/suffixes by length (shorter ones get higher weight)
+    for m in range(1, 5):
+        if len(name) >= m:
+            prefix = name[:m]
+            suffix = name[-m:]
+            # Higher weight for shorter n-grams as they're more common
+            weight = 1.0 / m
+            v[stable_hash(f'pfx_{prefix}', d)] += weight
+            v[stable_hash(f'sfx_{suffix}', d)] += weight
+    
+    # === Optimized N-gram Features ===
+    # Bi-grams (with position awareness for start/end)
+    if len(name) >= 2:
+        for i in range(len(name) - 1):
+            bigram = name[i:i+2]
+            if i == 0:  # Start bigram
+                v[stable_hash(f'start_bi_{bigram}', d)] += 1.5
+            elif i == len(name) - 2:  # End bigram
+                v[stable_hash(f'end_bi_{bigram}', d)] += 1.5
+            else:  # Middle bigrams (lower weight)
+                v[stable_hash(f'bi_{bigram}', d)] += 0.8
+    
+    # Tri-grams (focused on middle of name)
+    if len(name) >= 3:
+        for i in range(len(name) - 2):
+            trigram = name[i:i+3]
+            v[stable_hash(f'tri_{trigram}', d)] += 0.6  # Lower weight for trigrams
+    
+    # === Character Frequency Features ===
+    # Log-scaled character frequency with position bonus
+    char_counts = {}
     for i, char in enumerate(name):
-        position_feature = f'pos_{i}_{char}'
-        v[stable_hash(position_feature, d)] += 1
-        
-        # Relative position features (start, middle, end)
-        rel_pos = i / len(name)
-        if rel_pos < 0.33:
-            v[stable_hash(f'start_{char}', d)] += 1
-        elif rel_pos > 0.66:
-            v[stable_hash(f'end_{char}', d)] += 1
-        else:
-            v[stable_hash(f'mid_{char}', d)] += 1
+        if char in alphabet:
+            # Add position-based weighting
+            position_weight = 1.2 if i == 0 or i == len(name)-1 else 1.0
+            char_counts[char] = char_counts.get(char, 0) + position_weight
     
-    # === N-gram Features ===
-    # Enhanced n-gram processing (1-4 grams)
-    for n in range(1, 5):
-        for i in range(len(name) - n + 1):
-            ngram = name[i:i+n]
-            # Weight n-grams by their length (longer n-grams get higher weight)
-            v[stable_hash(f'ng_{ngram}', d)] += n / 4
+    for char, count in char_counts.items():
+        v[stable_hash(f'char_{char}', d)] += np.log1p(count)
     
-    # === Syllable Features ===
-    # Estimate syllables using vowel sequences
-    syllable_count = 1
-    prev_was_vowel = False
-    for char in name:
-        if char in vowels:
-            if not prev_was_vowel:
-                syllable_count += 1
-            prev_was_vowel = True
-        else:
-            prev_was_vowel = False
-    v[stable_hash('syllables', d)] = np.log1p(syllable_count)
+    # === Core Statistical Features ===
+    # Vowel ratio (keeping this from original as it worked well)
+    num_vowels = sum(1 for ch in name if ch in vowels)
+    v[-3] = num_vowels / len(name)
     
-    # === Consonant Pattern Features ===
-    # Detect consonant clusters
-    consonant_pattern = ''.join('C' if c in consonants else 'V' for c in name)
-    for i in range(len(consonant_pattern) - 1):
-        pattern = consonant_pattern[i:i+2]
-        v[stable_hash(f'pattern_{pattern}', d)] += 1
+    # Vowel ending (keeping this from original)
+    v[-2] = 1.0 if name[-1] in vowels else 0.0
     
-    # === Statistical Features ===
-    char_counts = Counter(name)
+    # Length feature (simplified)
+    v[-1] = min(len(name) / 15.0, 1.0)  # Normalize to [0,1]
     
-    # Character diversity ratio
-    diversity = len(char_counts) / len(name)
-    v[stable_hash('char_diversity', d)] = diversity
-    
-    # Consonant-vowel ratio
-    consonant_count = sum(1 for c in name if c in consonants)
-    vowel_count = sum(1 for c in name if c in vowels)
-    cv_ratio = consonant_count / max(1, vowel_count)
-    v[stable_hash('cv_ratio', d)] = np.log1p(cv_ratio)
-    
-    # === Phonetic Features ===
-    # Common phonetic endings
-    phonetic_endings = ['ing', 'ed', 'er', 'es', 'ion', 'ly', 'ment', 'ness', 'tion']
-    for ending in phonetic_endings:
-        if name.endswith(ending):
-            v[stable_hash(f'phon_{ending}', d)] += 1
-    
-    # Double letter detection
-    for i in range(len(name) - 1):
-        if name[i] == name[i + 1]:
-            v[stable_hash('double_letter', d)] += 1
-    
-    # === Length-based Features ===
-    # Log-scaled length
-    v[stable_hash('length', d)] = np.log1p(len(name))
-    
-    # Length percentile features (assuming most names are between 2-15 chars)
-    length_percentile = min(1.0, len(name) / 15)
-    v[stable_hash('length_percentile', d)] = length_percentile
-    
-    # Normalize the vector
+    # === Final Normalization ===
+    # L2 normalization
     norm = np.linalg.norm(v)
     if norm > 0:
         v /= norm
