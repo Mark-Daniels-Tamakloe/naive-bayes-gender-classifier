@@ -1,53 +1,51 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Naïve Bayes Classifier Implementation
+"""
+
 import numpy as np
 from naivebayesPY import naivebayesPY
 from naivebayesPXY import naivebayesPXY
 
 def naivebayesCL(x, y):
-# =============================================================================
-#function [w,b]=naivebayesCL(x,y);
-#
-#Implementation of a Naive Bayes classifier
-#Input:
-#x : n input vectors of d dimensions (dxn)
-#y : n labels (-1 or +1)
-#
-#Output:
-#w : weight vector
-#b : bias (scalar)
-# =============================================================================
+    """
+    Constructs a Naïve Bayes classifier in a linear form.
 
+    Parameters:
+    x : ndarray
+        Feature matrix with d dimensions and n samples (dxn).
+    y : ndarray
+        Label vector (-1 or +1) of size (1xn).
 
+    Returns:
+    w : ndarray
+        Weight vector used for classification.
+    b : float
+        Bias term.
+    """
 
-    # Convertng input matrix x and x1 into NumPy matrix
-    # input x and y should be in the form: 'a b c d...; e f g h...; i j k l...'
+    # Convert input to NumPy matrix form
     X = np.matrix(x)
+    d, n = X.shape  # Extract feature and sample dimensions
 
-    # Pre-configuring the size of matrix X
-    d,n = X.shape
+    # Compute P(Y) for both class labels
+    prob_y_pos, prob_y_neg = naivebayesPY(x, y)
+    
+    # Compute P(X | Y) for all features
+    prob_x_given_y_pos, prob_x_given_y_neg = naivebayesPXY(x, y)
 
-# =============================================================================
-# fill in code here
-    # YOUR CODE HERE
+    # Flatten probabilities for easier computation
+    prob_x_given_y_pos = np.asarray(prob_x_given_y_pos).flatten()
+    prob_x_given_y_neg = np.asarray(prob_x_given_y_neg).flatten()
 
-    # Get P(Y) for both classes
-    pos, neg = naivebayesPY(x, y)
-    
-    # Get P(X|Y) for all features
-    posprob, negprob = naivebayesPXY(x, y)
-    posprob = np.array(posprob).flatten()
-    negprob = np.array(negprob).flatten()
-    
-    # For the weights, we use: w_i = log(P(X_i=1|Y=1)/P(X_i=0|Y=1)) - log(P(X_i=1|Y=-1)/P(X_i=0|Y=-1))
-    w = np.log(posprob/(1-posprob)) - np.log(negprob/(1-negprob))
-    #w = np.log(posprob) - np.log(negprob)
-    
-    # For the bias, we use: b = log(P(Y=1)/P(Y=-1)) and add the sum of the logs of the probabilities of the features being 0
-    #b = np.log(pos) - np.log(neg)
-    b = np.log(pos) - np.log(neg) + np.log(1-posprob).sum() - np.log(1-negprob).sum()
+    # Compute weight vector: log-odds ratio between probabilities
+    w = np.log(prob_x_given_y_pos / (1 - prob_x_given_y_pos)) - np.log(prob_x_given_y_neg / (1 - prob_x_given_y_neg))
 
-    # Reshape w to be a column vector
-    w = np.array(w).reshape(-1, 1)
-    # print(w.shape)
-    
+    # Compute bias: class log-ratio plus feature probabilities adjustment
+    b = np.log(prob_y_pos / prob_y_neg) + np.sum(np.log(1 - prob_x_given_y_pos)) - np.sum(np.log(1 - prob_x_given_y_neg))
+
+    # Ensure w is a column vector
+    w = w.reshape(-1, 1)
+
     return w, b
-# =============================================================================
