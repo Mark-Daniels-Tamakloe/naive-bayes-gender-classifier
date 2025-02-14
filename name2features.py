@@ -18,7 +18,7 @@ def name2features(name):
     - Binary vowel ending indicator
     """
 
-    d = 1024  # Expanded feature space
+    d = 2048  # Increased feature space
     v = np.zeros(d)
     name = name.lower()
 
