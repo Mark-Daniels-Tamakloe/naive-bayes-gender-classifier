@@ -18,7 +18,7 @@ def name2features(name):
     - TF-IDF normalization for better weight distribution
     """
 
-    d = 768  # Expanded feature space
+    d = 1024  # Expanded feature space
     v = np.zeros(d)
     name = name.lower()
 
