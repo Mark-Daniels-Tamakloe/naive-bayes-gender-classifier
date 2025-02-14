@@ -9,20 +9,22 @@ def stable_hash(text, d):
 
 def name2features(name):
     """
-    Converts a name into a feature vector using multiple techniques:
+    Converts a name into a feature vector using:
     - Prefix and Suffix hashing (4-character sequences)
-    - Bi-gram and Tri-gram character encoding (normalized)
+    - Bi-gram, Tri-gram, and Quad-gram encoding (normalized)
     - Character frequency encoding with log scaling
     - Name length as a normalized feature
-    - Vowel ratio as a feature
-    - Binary vowel ending indicator
+    - Vowel ratio and rare character indicator
+    - First letter encoding (helps capture gender correlations)
+    - Middle character encoding for long names
     """
 
-    d = 2048  # Increased feature space
+    d = 2304  # Slightly increased feature space
     v = np.zeros(d)
     name = name.lower()
 
     vowels = set("aeiou")
+    rare_chars = set("xqz")
     alphabet = string.ascii_lowercase
 
     # Prefix Hashing (Up to 4 characters)
@@ -49,6 +51,12 @@ def name2features(name):
         trigram = f'tri_{name[i]}{name[i+1]}{name[i+2]}'
         v[stable_hash(trigram, d)] += 1 / trigram_count  # Normalize by total tri-grams
 
+    # Quad-gram Encoding (More robust name representation)
+    quadgram_count = max(1, len(name) - 3)
+    for i in range(len(name) - 3):
+        quadgram = f'quad_{name[i]}{name[i+1]}{name[i+2]}{name[i+3]}'
+        v[stable_hash(quadgram, d)] += 1 / quadgram_count
+
     # Log-scaled Character Frequency Encoding
     char_count = {char: np.log(1 + name.count(char)) for char in alphabet if char in name}
     for char, freq in char_count.items():
@@ -56,16 +64,21 @@ def name2features(name):
 
     # Vowel Ratio Feature
     num_vowels = sum(1 for ch in name if ch in vowels)
-    v[-3] = num_vowels / len(name) if len(name) > 0 else 0  # Normalize
+    v[-4] = num_vowels / len(name) if len(name) > 0 else 0  # Normalize
 
-    # Vowel Ending Binary Feature
-    v[-2] = 1 if name[-1] in vowels else 0
+    # Rare Character Indicator
+    v[-3] = any(ch in rare_chars for ch in name)
 
-    # Normalized Name Length Feature
-    max_length = 15  # Assume reasonable max length for names
-    v[-1] = min(len(name) / max_length, 1)  # Normalize between 0-1
+    # First Letter Encoding
+    v[-2] = stable_hash(f'first_{name[0]}', d)
 
-    # Normalize vector (TF-IDF style)
-    v = v / np.linalg.norm(v) if np.linalg.norm(v) > 0 else v
+    # Middle Character Encoding (Only for names longer than 6)
+    if len(name) > 6:
+        mid_index = len(name) // 2
+        v[-1] = stable_hash(f'mid_{name[mid_index]}', d)
+
+    # Normalize vector (Min-Max Scaling for stability)
+    v_min, v_max = v.min(), v.max()
+    v = (v - v_min) / (v_max - v_min) if v_max > v_min else v
 
     return v
