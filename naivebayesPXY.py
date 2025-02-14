@@ -12,7 +12,7 @@ def naivebayesPXY(x, y):
     """
     Compute P(X|Y) using a Bernoulli Naïve Bayes assumption.
     
-    :param x: Feature matrix (dxn)
+    :param x: Feature matrix (dxn), where each entry is binary (0 or 1)
     :param y: Label vector (-1 or +1) (1xn)
     :return: posprob (dx1), negprob (dx1) 
              where each entry is P(X_alpha = 1 | Y = y)
@@ -39,12 +39,12 @@ def naivebayesPXY(x, y):
     total_pos = max(total_pos, 1)
     total_neg = max(total_neg, 1)
 
-    # Compute feature-wise counts given y = +1 and y = -1 with smoothing
+    # Compute feature-wise counts given y = +1 and y = -1 with Laplace smoothing
     pos_counts = np.sum(X[:, pos_mask], axis=1, keepdims=True) + smoothing  
     neg_counts = np.sum(X[:, neg_mask], axis=1, keepdims=True) + smoothing  
 
-    # Compute probabilities
-    posprob = pos_counts / (total_pos + 2)  # Normalizing by class count
-    negprob = neg_counts / (total_neg + 2)
+    # Compute probabilities using Bernoulli assumption
+    posprob = pos_counts / (total_pos + 2 * smoothing)  # Normalizing by class count
+    negprob = neg_counts / (total_neg + 2 * smoothing)
 
     return posprob, negprob
