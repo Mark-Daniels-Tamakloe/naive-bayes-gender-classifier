@@ -28,7 +28,7 @@ def naivebayesCL(x, y):
     PXY_pos, PXY_neg = naivebayesPXY(X, y)
 
     # Ensure w is (d,1) by reshaping
-    w = (np.log(PXY_pos) - np.log(PXY_neg)).reshape(-1, 1)  # Ensures correct shape
+    w = np.log(PXY_pos / PXY_neg).reshape(-1, 1)  # Ensures correct shape
     
     # Ensure b is a scalar
     b = float(np.log(Y_pos) - np.log(Y_neg))  # Converts array to scalar
