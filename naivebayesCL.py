@@ -10,31 +10,34 @@ from naivebayesPY import naivebayesPY
 from naivebayesPXY import naivebayesPXY
 
 def naivebayesCL(x, y):
-    """
-    Implementation of a Naive Bayes classifier
-    Input:
-        x : n input vectors of d dimensions (dxn)
-        y : n labels (-1 or +1)
-    Output:
-        w : weight vector
-        b : bias (scalar)
-    """
+    # =============================================================================
+    # function [w,b]=naivebayesCL(x,y);
+    #
+    # Implementation of a Naive Bayes classifier
+    # Input:
+    # x : n input vectors of d dimensions (dxn)
+    # y : n labels (-1 or +1)
+    #
+    # Output:
+    # w : weight vector
+    # b : bias (scalar)
+    # =============================================================================
 
-    # Ensure X is a NumPy array (avoid np.matrix)
-    X = np.array(x)
+    # Converting input matrix x and y into NumPy matrix
+    # Input x and y should be in the form: 'a b c d...; e f g h...; i j k l...'
+    X = np.matrix(x)
+    Y = np.matrix(y)
 
-    # Get class priors P(Y=+1) and P(Y=-1)
-    Y_pos, Y_neg = naivebayesPY(X, y)
+    # Pre-configuring the size of matrix X
+    d, n = X.shape
 
-    # Compute conditional probabilities P(X|Y)
-    PXY_pos, PXY_neg = naivebayesPXY(X, y)
+    # =============================================================================
+    # Fill in code here
+    py_plus, py_minus = naivebayesPY(X, Y)
+    pxy_plus, pxy_minus = naivebayesPXY(X, Y)
 
-    # Ensure probabilities are column vectors
-    PXY_pos = PXY_pos.reshape(-1, 1)
-    PXY_neg = PXY_neg.reshape(-1, 1)
-
-    # Compute weight and bias
-    w = np.log(PXY_pos / PXY_neg)
-    b = np.log(Y_pos / Y_neg)
+    w = np.log(pxy_plus / pxy_minus)
+    b = np.log(py_plus / py_minus)
 
     return w, b
+    # =============================================================================
