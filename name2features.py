@@ -10,28 +10,29 @@ def stable_hash(text, d):
 def name2features(name):
     """
     Converts a name into a feature vector using multiple techniques:
-    - Prefix and Suffix hashing (3 characters max)
+    - Prefix and Suffix hashing (up to 3 characters)
     - Bi-gram and Tri-gram character encoding
-    - Character frequency encoding (log-scaled)
-    - Name length as a log-scaled feature
+    - Character frequency encoding with Min-Max scaling
+    - Name length as a normalized feature
     - Binary vowel ending indicator
+    - TF-IDF normalization for better weight distribution
     """
 
-    d = 768  # Expanded feature space
+    d = 1024  # Expanded feature space
     v = np.zeros(d)
     name = name.lower()
 
     vowels = set("aeiou")
     alphabet = string.ascii_lowercase
 
-    # Prefix Hashing (Bigrams for robustness)
-    for m in range(3):
+    # Prefix Hashing (Limit to 2 characters for better generalization)
+    for m in range(2):  
         if len(name) > m:
             prefix_bigram = f'prefix_{name[:m+1]}'
             v[stable_hash(prefix_bigram, d)] += 1
 
-    # Suffix Hashing (Bigrams for robustness)
-    for m in range(3):
+    # Suffix Hashing (Limit to 2 characters for better generalization)
+    for m in range(2):  
         if len(name) > m:
             suffix_bigram = f'suffix_{name[-(m+1):]}'
             v[stable_hash(suffix_bigram, d)] += 1
@@ -46,16 +47,20 @@ def name2features(name):
         trigram = f'tri_{name[i]}{name[i+1]}{name[i+2]}'
         v[stable_hash(trigram, d)] += 1
 
-    # Log-scaled Character Frequency Encoding
-    char_count = {char: np.log(1 + name.count(char)) for char in alphabet if char in name}
-    for char, freq in char_count.items():
-        v[stable_hash(f'char_{char}', d)] += freq
+    # Min-Max Scaled Character Frequency Encoding
+    char_count = {char: name.count(char) / len(name) for char in alphabet if char in name}
+    if char_count:
+        min_freq, max_freq = min(char_count.values()), max(char_count.values())
+        for char, freq in char_count.items():
+            normalized_freq = (freq - min_freq) / (max_freq - min_freq + 1e-6)  # Avoid division by zero
+            v[stable_hash(f'char_{char}', d)] += normalized_freq
 
     # Vowel Ending Binary Feature
     v[-1] = 1 if name[-1] in vowels else 0
 
-    # Log-scaled Name Length Feature
-    v[-2] = np.log(1 + len(name)) / np.log(20)  # Normalized between 0-1 (assuming max length ~20)
+    # Normalized Name Length Feature
+    max_length = 15  # Assume reasonable max length for names
+    v[-2] = min(len(name) / max_length, 1)  # Normalized between 0-1
 
     # Normalize vector (TF-IDF style)
     v = v / np.linalg.norm(v) if np.linalg.norm(v) > 0 else v
