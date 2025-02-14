@@ -32,6 +32,11 @@ def naivebayesCL(x, y):
     # Compute conditional probabilities P(X|Y)
     posprob, negprob = naivebayesPXY(x, y)
 
+    # Ensure no zero probabilities by adding Laplace smoothing
+    epsilon = 1e-10  # Small constant to avoid log(0)
+    posprob = np.clip(posprob, epsilon, 1)  # Clip to ensure nonzero probabilities
+    negprob = np.clip(negprob, epsilon, 1)
+
     # Compute weights (w)
     w = np.log(posprob) - np.log(negprob)
 
