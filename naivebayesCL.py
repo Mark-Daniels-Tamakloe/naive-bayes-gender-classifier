@@ -23,24 +23,17 @@ def naivebayesCL(x, y):
     # b : bias (scalar)
     # =============================================================================
 
-    # Convert input matrix x into NumPy array
+    # Convert input matrix x into NumPy matrix
     X = np.array(x)
 
-    # Compute prior probabilities
-    pos, neg = naivebayesPY(x, y)
+    # Compute prior probabilities P(Y)
+    Y_pos, Y_neg = naivebayesPY(X, y)
 
-    # Compute conditional probabilities P(X|Y)
-    posprob, negprob = naivebayesPXY(x, y)
+    # Compute conditional probabilities P(X | Y)
+    PXY_pos, PXY_neg = naivebayesPXY(X, y)
 
-    # Ensure no zero probabilities by adding Laplace smoothing
-    epsilon = 1e-10  # Small constant to avoid log(0)
-    posprob = np.clip(posprob, epsilon, 1)  # Clip to ensure nonzero probabilities
-    negprob = np.clip(negprob, epsilon, 1)
-
-    # Compute weights (w)
-    w = np.log(posprob) - np.log(negprob)
-
-    # Compute bias (b)
-    b = np.log(pos) - np.log(neg)
+    # Compute weight vector w and bias b
+    w = np.log(PXY_pos / PXY_neg)
+    b = np.log(Y_pos / Y_neg)
 
     return w, b
