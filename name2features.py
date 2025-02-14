@@ -1,60 +1,62 @@
 #!/usr/bin/python
 import numpy as np
 import random
+import string
 
 def name2features(name):
     """
-    Converts a name into a numerical feature vector.
-    The feature vector consists of:
-    - Prefixes (up to 3 letters)
-    - Suffixes (up to 3 letters)
-    - Letter bi-grams and tri-grams
-    - Vowel-related features
-    - Normalized TF-IDF style weighting
-
-    Returns:
-    - A vector of length d representing the extracted features.
+    Converts a name into a feature vector using multiple techniques:
+    - Prefix and Suffix hashing (3 characters max)
+    - Bi-gram and Tri-gram character encoding
+    - Character frequency encoding (relative frequency)
+    - Name length as a feature
+    - Binary vowel ending indicator
+    - TF-IDF normalization for weight balancing
     """
 
-    d = 512  # Increased feature space to reduce collisions
+    d = 768  # Increased feature space for better hashing distribution
     v = np.zeros(d)
     name = name.lower()
 
     vowels = set("aeiou")
+    alphabet = string.ascii_lowercase
 
-    # Hash Prefixes (up to 3 letters)
-    prefix_max = 3
-    for m in range(prefix_max):
-        prefix_string = 'prefix' + name[:m+1]  # First m+1 characters
-        prefix_index = hash(prefix_string) % d
-        v[prefix_index] += 1  # Count occurrences instead of binary
+    # Prefix Hashing (Up to 3 characters)
+    for m in range(3):
+        if len(name) > m:
+            prefix_string = f'prefix{name[:m+1]}'
+            prefix_index = hash(prefix_string) % d
+            v[prefix_index] += 1
 
-    # Hash Suffixes (up to 3 letters)
-    suffix_max = 3
-    for m in range(suffix_max):
-        suffix_string = 'suffix' + name[-(m+1):]  # Last m+1 characters
-        suffix_index = hash(suffix_string) % d
-        v[suffix_index] += 1  # Count occurrences instead of binary
+    # Suffix Hashing (Up to 3 characters)
+    for m in range(3):
+        if len(name) > m:
+            suffix_string = f'suffix{name[-(m+1):]}'
+            suffix_index = hash(suffix_string) % d
+            v[suffix_index] += 1
 
-    # Hash Letter Bi-grams (2-letter sequences)
+    # Bi-gram and Tri-gram Encoding
     for i in range(len(name) - 1):
-        bigram = f"bi_{name[i]}{name[i+1]}"
+        bigram = f'bi_{name[i]}{name[i+1]}'
         bigram_index = hash(bigram) % d
-        v[bigram_index] += 1  # Count occurrences
+        v[bigram_index] += 1
 
-    # Hash Letter Tri-grams (3-letter sequences)
     for i in range(len(name) - 2):
-        trigram = f"tri_{name[i]}{name[i+1]}{name[i+2]}"
+        trigram = f'tri_{name[i]}{name[i+1]}{name[i+2]}'
         trigram_index = hash(trigram) % d
-        v[trigram_index] += 1  # Count occurrences
+        v[trigram_index] += 1
 
-    # Vowel Ratio Feature (Normalized)
-    vowel_count = sum(1 for char in name if char in vowels)
-    vowel_ratio = vowel_count / len(name) if len(name) > 0 else 0
-    v[-1] = vowel_ratio  # Store normalized vowel ratio
+    # Character Frequency Encoding
+    char_count = {char: name.count(char) / len(name) for char in alphabet if char in name}
+    for char, freq in char_count.items():
+        char_index = hash(f'char_{char}') % d
+        v[char_index] += freq  # Weighted frequency
 
-    # Binary Feature: Does the name end in a vowel?
-    v[-2] = 1 if name[-1] in vowels else 0
+    # Vowel Ending Binary Feature
+    v[-1] = 1 if name[-1] in vowels else 0
+
+    # Name Length Feature (Scaled)
+    v[-2] = min(len(name) / 10, 1)  # Normalized between 0-1
 
     # Normalize using TF-IDF style weighting
     v = v / np.linalg.norm(v) if np.linalg.norm(v) > 0 else v
