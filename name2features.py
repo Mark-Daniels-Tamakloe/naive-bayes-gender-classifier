@@ -29,5 +29,7 @@ def name2features(name):
         random.seed(suffix_string)
         suffix_index = int(random.randint(0,d-1))
         v[suffix_index] = 1
+
+
         
-    return v
+    return (v > 0).astype(int)  # Ensures strictly binary values

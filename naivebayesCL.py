@@ -10,27 +10,30 @@ from naivebayesPY import naivebayesPY
 from naivebayesPXY import naivebayesPXY
 
 def naivebayesCL(x, y):
-    """
-    Compute Naïve Bayes classifier parameters (weights w and bias b).
-    
-    :param x: Feature matrix (dxn)
-    :param y: Label vector (-1 or +1) (1xn)
-    :return: w (dx1) weight vector, b (scalar bias)
-    """
+    # =============================================================================
+    # function [w,b]=naivebayesCL(x,y);
+    #
+    # Implementation of a Naive Bayes classifier
+    # Input:
+    # x : n input vectors of d dimensions (dxn)
+    # y : n labels (-1 or +1)
+    #
+    # Output:
+    # w : weight vector
+    # b : bias (scalar)
+    # =============================================================================
 
-    # Convert input to NumPy array
+    # Convert input matrix x into NumPy array
     X = np.array(x)
 
-    # Compute P(Y)
-    Y_pos, Y_neg = naivebayesPY(X, y)
+    # Compute prior probabilities P(Y)
+    P_Ypos, P_Yneg = naivebayesPY(X, y)
 
-    # Compute P(X|Y)
+    # Compute conditional probabilities P(X | Y)
     PXY_pos, PXY_neg = naivebayesPXY(X, y)
 
-    # Ensure w is (d,1) by reshaping
-    w = np.log(PXY_pos / PXY_neg).reshape(-1, 1)  # Ensures correct shape
-    
-    # Ensure b is a scalar
-    b = float(np.log(Y_pos) - np.log(Y_neg))  # Converts array to scalar
+    # Compute weight vector w and bias b
+    w = np.log(PXY_pos) - np.log(PXY_neg)  # Log probability ratio
+    b = np.log(P_Ypos) - np.log(P_Yneg)    # Log prior ratio
 
     return w, b
