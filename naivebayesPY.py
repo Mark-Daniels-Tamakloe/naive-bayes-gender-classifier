@@ -41,4 +41,13 @@ def naivebayesPY(x, y):
     ## fill in code here
     # YOUR CODE HERE
 
+    # Count the occurrences of each class
+    pos_count = np.sum(Ynew == 1)  # Number of positive examples
+    neg_count = np.sum(Ynew == -1) # Number of negative examples
+    total_count = pos_count + neg_count  # Total number of examples
+
+    # Compute class probabilities
+    pos = pos_count / total_count  # P(Y=1)
+    neg = neg_count / total_count  # P(Y=-1)
+
     return pos,neg

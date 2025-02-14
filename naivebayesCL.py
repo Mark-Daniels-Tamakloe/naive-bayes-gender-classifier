@@ -36,5 +36,15 @@ def naivebayesCL(x, y):
 # fill in code here
     # YOUR CODE HERE
 
+    # Compute class prior probabilities
+    pos, neg = naivebayesPY(x, y)
+
+    # Compute conditional probabilities P(X|Y)
+    posprob, negprob = naivebayesPXY(x, y)
+
+    # Compute log-odds for linear classification
+    w = np.log(posprob) - np.log(negprob)  # Weight vector
+    b = np.log(pos) - np.log(neg) + np.sum(np.log(1 - negprob) - np.log(1 - posprob))  # Bias term
+
     return w,b
 # =============================================================================

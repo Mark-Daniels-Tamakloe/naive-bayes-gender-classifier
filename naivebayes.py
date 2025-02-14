@@ -36,5 +36,17 @@ def naivebayes(x, y, x1):
 # fill in code here
     # YOUR CODE HERE
 
+    # Compute P(Y=1) and P(Y=-1)
+    pos, neg = naivebayesPY(x, y)
+
+    # Compute P(X|Y=1) and P(X|Y=-1)
+    posprob, negprob = naivebayesPXY(x, y)
+
+    # Compute log P(Y=1|X=x1) / P(Y=-1|X=x1) using Bayes rule
+    log_pos = np.sum(np.log(posprob) * X1 + np.log(1 - posprob) * (1 - X1)) + np.log(pos)
+    log_neg = np.sum(np.log(negprob) * X1 + np.log(1 - negprob) * (1 - X1)) + np.log(neg)
+
+    logratio = log_pos - log_neg
+
     return logratio
 # =============================================================================

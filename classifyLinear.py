@@ -29,5 +29,8 @@ def classifyLinear(x, w, b):
 # fill in code here
     # YOUR CODE HERE
 
+    # Compute predictions using the linear decision function
+    preds = np.sign(np.dot(W.T, X) + b)
+
     return preds
 # =============================================================================

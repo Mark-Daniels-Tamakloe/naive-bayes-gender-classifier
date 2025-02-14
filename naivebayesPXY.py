@@ -9,50 +9,42 @@
 import numpy as np
 
 def naivebayesPXY(x, y):
-# =============================================================================
-#    function [posprob,negprob] = naivebayesPXY(x,y);
-#
-#    Computation of P(X|Y)
-#    Input:
-#    x : n input vectors of d dimensions (dxn)
-#    y : n labels (-1 or +1) (1xn)
-#
-#    Output:
-#    posprob: dx1 probability vector with entries p(x_alpha = 1|y=+1)
-#    negprob: dx1 probability vector with entries p(x_alpha = 1|y=-1)
-# =============================================================================
+    """
+    Compute P(X|Y) using a Bernoulli Naïve Bayes assumption.
+    
+    :param x: Feature matrix (dxn)
+    :param y: Label vector (-1 or +1) (1xn)
+    :return: posprob (dx1), negprob (dx1) 
+             where each entry is P(X_alpha = 1 | Y = y)
+    """
 
+    # Convert input matrix x and y into NumPy arrays
+    X = np.array(x)  # Ensure X is a NumPy array
+    Y = np.array(y).reshape(-1)  # Ensure Y is a 1D array
 
+    d, n = X.shape  # Get dimensions
 
-    # Convertng input matrix x and y into NumPy matrix
-    # input x and y should be in the form: 'a b c d...; e f g h...; i j k l...'
-    # TODO: do not use np.matrix!
-    X = np.matrix(x)
-    Y = np.matrix(y)
+    # Laplace Smoothing Parameter
+    smoothing = 1  # Add-one Laplace smoothing
 
-    d,n = X.shape
+    # Create masks for Y = +1 and Y = -1
+    pos_mask = (Y == 1)  # Boolean array where y = +1
+    neg_mask = (Y == -1) # Boolean array where y = -1
 
-    # Pre-constructing a matrix of all-ones (dx2)
-    X0 = np.ones((d,2))
-    Y0 = np.array([[-1, 1]])
+    # Compute total counts for y = +1 and y = -1
+    total_pos = np.sum(pos_mask)  # Count number of positive samples
+    total_neg = np.sum(neg_mask)  # Count number of negative samples
 
-    # add one all-ones positive and negative example
-    Xnew = np.hstack((X, X0)) #stack arrays in sequence horizontally (column-wise)
-    Ynew = np.hstack((Y, Y0))
+    # Prevent division by zero
+    total_pos = max(total_pos, 1)
+    total_neg = max(total_neg, 1)
 
-    # matrix of all-zeros -
-    X1 = np.zeros((d, 2))
-    # add one all-zeros positive and negative example - M.Joo
-    Xnew = np.hstack((Xnew, X1))
-    Ynew = np.hstack((Ynew, Y0))
+    # Compute feature-wise counts given y = +1 and y = -1 with smoothing
+    pos_counts = np.sum(X[:, pos_mask], axis=1, keepdims=True) + smoothing  
+    neg_counts = np.sum(X[:, neg_mask], axis=1, keepdims=True) + smoothing  
 
-    # Re-configuring the size of matrix Xnew
-    d,n = Xnew.shape
+    # Compute probabilities
+    posprob = pos_counts / (total_pos + 2)  # Normalizing by class count
+    negprob = neg_counts / (total_neg + 2)
 
-# =============================================================================
-# fill in code here
-    # YOUR CODE HERE
-
-    return posprob,negprob
-
-# =============================================================================
+    return posprob, negprob
