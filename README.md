@@ -41,7 +41,6 @@ The classifier uses custom features such as:
 |--------------------|------------|
 | Training Accuracy  | 86%        |
 | Testing Accuracy   | 79.7%      |
-| Final Score        | 97 / 100   |
 
 The model passed all functional correctness tests and nearly met the threshold for bonus accuracy.
 
